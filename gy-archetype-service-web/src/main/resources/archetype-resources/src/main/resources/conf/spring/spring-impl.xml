@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ss="http://www.springframework.org/schema/security" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+	http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+	<!-- 为了避免名字冲突（spring-context.xml）spring-impl.xml -->
+	<!-- 使用CGLIB自动创建代理Bean -->
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+
+	<context:component-scan base-package="${package}.service.impl" />
+	
+	<import resource="classpath*:conf/spring/spring-business.xml" />
+
+	<!-- 加载dubbo生产者配置 -->
+	<import resource="spring-dubbo-provider.xml" />
+
+	<!-- 日志配置 -->
+	<bean id="loggingInitialization" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetClass" value="${package}.util.log.LogbackConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>classpath:conf/log/main_$[envName]_logging.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- 服务统一处理 -->
+	<bean id="commonServiceInterceptor" class="${package}.service.util.ServiceInterceptor"></bean>
+	<aop:config>
+		<aop:pointcut id="servicePointcut" expression="execution(public * ${package}.service.impl..*.*(..))" />
+		<aop:aspect id="serviceAspect" ref="commonServiceInterceptor">
+			<aop:around method="around" pointcut-ref="servicePointcut" />
+		</aop:aspect>
+	</aop:config>
+
+</beans>
